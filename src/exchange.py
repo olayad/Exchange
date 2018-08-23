@@ -49,37 +49,62 @@ class LiqTx(BtcTx):
 
 
 def loadConfig(filename):
-    conf = {}
-    with open(filename) as f:
-        for line in f:
-            if len(line) == 0 or line[0] == "#" or len(line.split("=")) != 2:
-                continue
-            conf[line.split("=")[0]] = line.split("=")[1].strip()
-    conf["filename"] = filename
-    return conf
+	conf = {}
+	with open(filename) as f:
+		for line in f:
+			if len(line) == 0 or line[0] == "#" or len(line.split("=")) != 2:
+				continue
+			conf[line.split("=")[0]] = line.split("=")[1].strip()
+	conf["filename"] = filename
+	return conf
+
+def startbitcoind(datadir, conf, args=""):
+	print("[Info] - Initializing bitcoind -datadir="+datadir)
+	command = "bitcoind -datadir="+datadir
+	print("Command to run: ", command)
+	subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+	return AuthServiceProxy("http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
+
+
 
 print("[Info] Initializing environment...")
 
 # Make data directories for each daemon
-b_datadir_miner="./../tmp/btc-miner"	
-b_datadir_exc="./../tmp/btc-exc"	
-b_datadir_alice="./../tmp/btc-alice"	
-b_datadir_bob="./../tmp/btc-bob"	
+b_datadir_min="./tmp/btc-min"	
+b_datadir_exc="./tmp/btc-exc"	
+b_datadir_ali="./tmp/btc-ali"	
+b_datadir_bob="./tmp/btc-bob"	
 
 # Remove existing data
-folders = b_datadir_miner, b_datadir_exc, b_datadir_alice, b_datadir_bob
-for f in folders:
-	try:
-		shutil.rmtree(f)
-	except FileNotFoundError:
-		print("[Info] Environment setup - rm folder not found...")
 
-# os.makedirs(b_datadir_miner)
+
+# folders = b_datadir_min, b_datadir_exc, b_datadir_ali, b_datadir_bob
+# for f in folders:
+try:
+	shutil.rmtree("./tmp")
+except FileNotFoundError:
+	pass
+
+
+os.makedirs(b_datadir_min)
 
 # # Also configure the nodes by copying the configuration files from
-# shutil.copyfile("./bitcoin-miner.conf", b_datadir_miner+"/bitcoin.conf")
+shutil.copyfile("./src/bitcoin-miner.conf", b_datadir_min+"/bitcoin.conf")
+
+bminconf = loadConfig(b_datadir_min+"/bitcoin.conf")
+bmin = startbitcoind(b_datadir_min, bminconf)
+
+# Need to copy an existing wallet.dat since bitcoind doesn't generate one
+# shutil.copytree("./src/wallet-miner", b_datadir_min+"/regtest/wallets" )
+
+time.sleep(2)
 
 
+print(bmin.generate(101))
+print("GETBALANCE:", bmin.getbalance())
+
+print("GETBLOCKCHAININFO:", bmin.getblockchaininfo())
+bmin.stop()
 
 
 # print("[Info] Starting exchange.py...")
