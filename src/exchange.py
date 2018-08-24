@@ -87,6 +87,9 @@ except FileNotFoundError:
 
 
 os.makedirs(b_datadir_min)
+os.makedirs(b_datadir_exc)
+os.makedirs(b_datadir_ali)
+os.makedirs(b_datadir_bob)
 
 # # Also configure the nodes by copying the configuration files from
 shutil.copyfile("./src/bitcoin-miner.conf", b_datadir_min+"/bitcoin.conf")
