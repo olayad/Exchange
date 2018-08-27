@@ -88,14 +88,18 @@ except FileNotFoundError:
 
 os.makedirs(b_datadir_min)
 os.makedirs(b_datadir_exc)
-os.makedirs(b_datadir_ali)
-os.makedirs(b_datadir_bob)
+# os.makedirs(b_datadir_ali)
+# os.makedirs(b_datadir_bob)
 
 # # Also configure the nodes by copying the configuration files from
 shutil.copyfile("./src/bitcoin-miner.conf", b_datadir_min+"/bitcoin.conf")
+shutil.copyfile("./src/bitcoin-exchange.conf", b_datadir_exc+"/bitcoin1.conf")
 
 bminconf = loadConfig(b_datadir_min+"/bitcoin.conf")
+bexcconf = loadConfig(b_datadir_exc+"/bitcoin1.conf")
+
 bmin = startbitcoind(b_datadir_min, bminconf)
+bexc = startbitcoind(b_datadir_exc, bexcconf)
 
 # Need to copy an existing wallet.dat since bitcoind doesn't generate one
 # shutil.copytree("./src/wallet-miner", b_datadir_min+"/regtest/wallets" )
@@ -103,11 +107,17 @@ bmin = startbitcoind(b_datadir_min, bminconf)
 time.sleep(2)
 
 
-print(bmin.generate(101))
-print("GETBALANCE:", bmin.getbalance())
+# print(bmin.generate(101))
+# print("GETBALANCE:", bmin.getbalance())
 
-print("GETBLOCKCHAININFO:", bmin.getblockchaininfo())
+time.sleep(1)
+
+# print("[Info] bmin: ", bmin.getblockchaininfo())
+print()
+print("[Info] bexc: ", bexc.getblockchaininfo())
+
 bmin.stop()
+bexc.stop()
 
 
 # print("[Info] Starting exchange.py...")
