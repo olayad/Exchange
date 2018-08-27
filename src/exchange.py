@@ -59,15 +59,16 @@ def loadConfig(filename):
 	return conf
 
 def startbitcoind(datadir, conf, args=""):
-	print("[Info] - Initializing bitcoind -datadir="+datadir)
-	command = "bitcoind -datadir="+datadir
-	print("Command to run: ", command)
+	command = "bitcoind -datadir="+datadir+" -conf=./bitcoin.conf"
+	print("[Info] - Initializing "+command)
+	# print("Command to run: ", command)
 	subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 	return AuthServiceProxy("http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
 
 
 
 print("[Info] Initializing environment...")
+subprocess.call("./src/killdaemon.sh") 		# Kill all bitcoind and liquidd that are currently running
 
 # Make data directories for each daemon
 b_datadir_min="./tmp/btc-min"	
@@ -76,8 +77,6 @@ b_datadir_ali="./tmp/btc-ali"
 b_datadir_bob="./tmp/btc-bob"	
 
 # Remove existing data
-
-
 # folders = b_datadir_min, b_datadir_exc, b_datadir_ali, b_datadir_bob
 # for f in folders:
 try:
@@ -93,27 +92,35 @@ os.makedirs(b_datadir_exc)
 
 # # Also configure the nodes by copying the configuration files from
 shutil.copyfile("./src/bitcoin-miner.conf", b_datadir_min+"/bitcoin.conf")
-shutil.copyfile("./src/bitcoin-exchange.conf", b_datadir_exc+"/bitcoin1.conf")
+shutil.copyfile("./src/bitcoin-exchange.conf", b_datadir_exc+"/bitcoin.conf")
+time.sleep(.5)
 
 bminconf = loadConfig(b_datadir_min+"/bitcoin.conf")
-bexcconf = loadConfig(b_datadir_exc+"/bitcoin1.conf")
+bexcconf = loadConfig(b_datadir_exc+"/bitcoin.conf")
 
 bmin = startbitcoind(b_datadir_min, bminconf)
+time.sleep(3)
+
 bexc = startbitcoind(b_datadir_exc, bexcconf)
 
 # Need to copy an existing wallet.dat since bitcoind doesn't generate one
 # shutil.copytree("./src/wallet-miner", b_datadir_min+"/regtest/wallets" )
 
-time.sleep(2)
+time.sleep(3)
 
 
-# print(bmin.generate(101))
-# print("GETBALANCE:", bmin.getbalance())
+bmin.generate(101)
+print("bmin.getbalance():", bmin.getbalance())
 
 time.sleep(1)
 
 # print("[Info] bmin: ", bmin.getblockchaininfo())
 print()
+print("bmin.getbalance():", bmin.getbalance())
+time.sleep(1)
+
+print("[Info] bexc: ", bexc.getbalance())
+print("[Info] bexc: ", bexc.getpeerinfo())
 print("[Info] bexc: ", bexc.getblockchaininfo())
 
 bmin.stop()
