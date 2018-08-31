@@ -18,21 +18,49 @@ class Exchange:
 		self.conf_btc_tx = []
 		self.unconf_btc_tx = []
 		
-	def printUsers(self):
-		print("-=-=-= Exchange: "+self.name+" users=-=-=-")
+	def getUser(self, name):
 		for u in self.users:
-			print("ID: "+str(u.uid)+" \tName: "+u.name+" \tBTC Balance: ")
+			if u.name == name:
+				print("[Debug] getUser() - name:"+name+"\t return:"+str(u.uid)+" "+u.name)
+				return u
+		print("[Debug] getUser() - name:"+name+"\t return:-1")
+		return -1
+
+	def getUserID(self, name):
+		for u in self.users:
+			if u.name == name:
+				# print("[DEBUG] getUserID() - Returning user_name:"+name+"\tuid:"+str(u.uid))
+				return u.uid
+		# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
+		return -1 
+
+	def generateBtcAddr(self, user_name):
+		address = bexc.getnewaddress()	
+		user = self.getUser(user_name)
+		print("[Debug] getUser() return:",user)
+		if (user is not -1):
+			user.addBtcAddress(address)
+		else:
+			sys.exit('getUser() returned -1, Is the user "%s" is registered in the exchange "%s"?'%(user_name, self.name))
+		print("[Info] - generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
+
+	def printUsers(self):
+		print("\n-=-=-= Exchange: "+self.name+" User List=-=-=-")
+		print('{0:<3} {1:<10} {2:<10}'.format("ID", "User_Name", "BTC_balance"))
+		for u in self.users:
+
+			print('{0:3d} {1:<10} {2:10d}'.format(u.uid, u.name, 0))
+			# print("ID: "+str(u.uid)+" \tUser_name: "+u.name+"\t\t"+"BTC_balance: ")
 		print("Total users:", self.user_ctr)
 		print("-=-=-= End of List =-=-=-")
 
 class User:
 	def __init__(self, name, exchange):
 		self.uid = exchange.user_ctr
-		self.name = name
+		self.name = name  	#TODO: name must be unique
 		self.conf_btc_txs = []
 		self.unconf_btc_txs = []
-		self.btc_addresses = []
-
+		self.btc_addr = []
 		exchange.users.append(self);
 		exchange.user_ctr += 1
 
@@ -40,7 +68,14 @@ class User:
 		return str(self.__dict__)
 
 	def addBtcAddress(self, address):
-		self.btc_addresses.append(address)
+		self.btc_addr.append(address)
+
+	def printBtcAddresses(self):
+		print("\n-=-=-= PubKeys: "+self.name+" =-=-=-")
+		for p in self.btc_addr:
+			print('{0:<6}'.format(p))
+		print("-=-=-= End of List =-=-=-")
+
 
 class BtcTx:
 	def __init__ (self, txid, vout, address, amount, status):
@@ -123,41 +158,34 @@ print("[Info] Initializing exchange and user instances...")
 excA = Exchange("A")
 excB = Exchange("B")
 alice = User("Alice", excA)
+tom = User("Tom", excA)
 bob = User("Bob", excB)
-print("Print excA user list:", excA.printUsers())
+
+
+excA.printUsers()
+excB.printUsers()
 
 # Generating some coins to spend
 bmin.generate(101)
-print("bmin.getnewaddress", bmin.getnewaddress())
-print("bmin.getbalance():", bmin.getbalance())
 time.sleep(.5)
 print()
 
+excA.generateBtcAddr("Alice")
+excA.generateBtcAddr("Alice")
+excA.generateBtcAddr("Alice")
+excA.generateBtcAddr("Alice")
+excA.generateBtcAddr("Alice")
+excB.generateBtcAddr("Bob")
+excB.generateBtcAddr("Tom")
 
-print("[Info] bexc.getbalance: ", bexc.getbalance())
+alice.printBtcAddresses()
+bob.printBtcAddresses()
+tom.printBtcAddresses()
+
+excA.getUser("Tom")
+
 
 bmin.stop()
 bexc.stop()
 
 
-# print("[Info] Starting exchange.py...")
-
-# exc_a = Exchange()
-# exc_b = Exchange()
-
-# alice = User("Alice", exc_a)
-# bob = User("Bob", exc_b)
-
-# btctx1 = BtcTx("b1aaa", 0, "2dmwiWt9r", 0.8999, 1)
-# lqtx1 = LiqTx("l1aaa", 0, "2dmwiWt9r", 0.9 , 1, "blinderblinder", "assetblinderassetblinder")
-
-# print("-=-=-= [Printing Transactions] =-=-=-")
-# print("Lqtx1", lqtx1)
-# print("Tx1: ", btctx1)
-
-# print("-=-=-= [Printing users in Exchange A] =-=-=-")
-# for user in exc_a.users:
-# 	print(user.uid, user.name)
-# print("-=-=-= [Printing users in Exchange B] =-=-=-")
-# for user in exc_b.users:
-# 	print(user.uid, user.name)
