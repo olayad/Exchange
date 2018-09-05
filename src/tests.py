@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-from exchange import Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
+from exchange import DaemonBtcTx, Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
 import os
 import random
 import sys
 import time
 import subprocess
 import shutil
+import json
 
 def initEnvironment():
 	print("[Info] Initializing environment...")
@@ -63,50 +64,83 @@ if __name__ == '__main__':
 	tom = User("Tom", excA)
 	bob = User("Bob", excB)
 
+	daemonbtcA = DaemonBtcTx("btc-daemon-excA", excA)
+	DaemonBtcTx.daemon = True
+	daemonbtcA.start()
 
-	# excA.printUsers()
-	# excB.printUsers()
-	bmin.generate(101) # Generating some coins to spend
-	time.sleep(.5)
-	print("\nSending initial coins to spend to Alice...")
-	print("bmin.getbalance():"+ str(bmin.getbalance()))
 
-	txid1 = (bmin.sendtoaddress(excA.generateBtcAddr(None, bexc), 10)) # Sending 10 BTC to Alice
-	print("Txid1:"+txid1)
-	txid2 = bmin.sendtoaddress(bbob.getnewaddress(), 10)
-	time.sleep(1)
-	print("Min getrawmempool 1:"+ str(bmin.getrawmempool()))
-	print("Exc getrawmempool 1:"+ str(bexc.getrawmempool()))
-	print("Ali getrawmempool 1:"+ str(bali.getrawmempool()))
-	print("Bob getrawmempool 1:"+ str(bbob.getrawmempool()))
-	print()
-	time.sleep(5)
-
-	print("Min getrawmempool 2:"+ str(bmin.getrawmempool()))
-	print("Exc getrawmempool 2:"+ str(bexc.getrawmempool()))
-	print("Ali getrawmempool 2:"+ str(bali.getrawmempool()))
-	print("Bob getrawmempool 2:"+ str(bbob.getrawmempool()))
+	# Generating some coins to spend
+	bmin.generate(101) 
+	time.sleep(1)	# Verified, enough time to propagate
+	txid1 = bmin.sendtoaddress(bali.getnewaddress(), 10) # Sending 10 BTC to Alice
+	time.sleep(2)
 	bmin.generate(1)
+	time.sleep(1) 
+	# print("Min getrawmempool - Alice init funds:"+ str(bmin.getrawmempool()))
+	# print("Exc getrawmempool - Alice init funds:"+ str(bexc.getrawmempool()))
+	# print("Ali getrawmempool - Alice init funds:"+ str(bali.getrawmempool()))
+	# print("Bob getrawmempool - Alice init funds:"+ str(bbob.getrawmempool()))
+	# print()
+
+	# print("Min getblockchaininfo():"+ str(bmin.getblockchaininfo()))
+	# print("Exc getblockchaininfo():"+ str(bexc.getblockchaininfo()))
+	# print("Ali getblockchaininfo():"+ str(bali.getblockchaininfo()))
+	# print("Bob getblockchaininfo():"+ str(bbob.getblockchaininfo()))
+
+	
+	
 
 
-	# excA.generateBtcAddr("Alice", bexc)
-	# excB.generateBtcAddr("Bob", bexc)
-	# excA.generateBtcAddr("Tom", bexc)
-	# alice.printBtcAddresses()
-	# bob.printBtcAddresses()
-	# tom.printBtcAddresses()
+
+	#Alice goes to exchange and wants to deposit BTC, generates a deposit address in exchange
+	alice_deposit_addr = excA.generateBtcAddr("Alice", bexc)
+	alice.printBtcAddresses()
+	#Alice sends btc to exchange
+	bali.sendtoaddress(alice_deposit_addr, 1)
+	bali.sendtoaddress(alice_deposit_addr, 2)
+	bali.sendtoaddress(alice_deposit_addr, 3)
+
+	time.sleep(3)
+	print("Min getrawmempool - aftert exc deposit:"+ str(bmin.getrawmempool()))
+	print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
+	print("Ali getrawmempool - aftert exc deposit:"+ str(bali.getrawmempool()))
+	print("Bob getrawmempool - aftert exc deposit:"+ str(bbob.getrawmempool()))
+
+	print()
+	print("Exc listtransactions:"+ str(bexc.listtransactions()))
+
+
+
+	time.sleep(1)
+	sys.exit(1)
+
+
+
+	data = bexc.listtransactions()
+	for tx in data:
+		for k in tx:
+			print(k, tx[k])
+		print()
+
+
+
+
+
+
+
+	bmin.generate(1)
+	time.sleep(3)
+
 	print()
 	# print("bmin.listtransactions():"+ str(bmin.listtransactions()))
-	print()
-	print("Min getrawmempool 3:"+ str(bmin.getrawmempool()))
-	print("Exc getrawmempool 3:"+ str(bexc.getrawmempool()))
-	print("Ali getrawmempool 3:"+ str(bali.getrawmempool()))
-	print("Bob getrawmempool 3:"+ str(bbob.getrawmempool()))
-	print()
+
 	print("Min getbalance():"+ str(bmin.getbalance()))
-	print("Exc getbalance():"+ str(bexc.getbalance()))
+	print("Exc getbalance():"+ str(bexc.getbalance("*", 0)))
 	print("Ali getbalance():"+ str(bali.getbalance()))
 	print("Bob getbalance():"+ str(bbob.getbalance()))
+
+	print("Exc listreceivedbyaddress:"+ str(bexc.listreceivedbyaddress(0 , False, True)))
+
 
 	print()
 	print("Exc listtransactions:"+ str(bexc.listtransactions()))
@@ -121,3 +155,6 @@ if __name__ == '__main__':
 	bbob.stop()
 
 
+
+	# excA.printUsers()
+	# excB.printUsers()

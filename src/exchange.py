@@ -7,6 +7,29 @@ import sys
 import time
 import subprocess
 import shutil
+import json
+import threading
+
+# This thread purpose is to monitor listtransactions() and check if a new transaction has been recieved.
+class DaemonBtcTx(threading.Thread):
+	def __init__(self, tid, exchange):
+		threading.Thread.__init__(self)
+		self.exc = exchange
+		self.tid = tid
+
+	def run(self):
+		print("[Info] Initializing "+str(self.tid)+" thread...")
+		print("[Info] Thread "+self.tid+" - Monitoring BTC address list...")
+
+		i = 0
+		while (i <= 2):
+			if (len(self.exc.monitored_btc_addr) == i):
+				pass
+			else:
+				print("[Info] Tread - New monitored_btc_addr found! "+str(i)) 
+				for x in self.exc.monitored_btc_addr: # <--- do I really need monitored transactions to the exchange level?
+					print ("Thread address: "+x)
+				i += 1
 
 class Exchange:
 	def __init__(self, name):
@@ -17,9 +40,10 @@ class Exchange:
 		self.unconf_liq_tx = []
 		self.conf_btc_tx = []
 		self.unconf_btc_tx = []
+		self.monitored_btc_addr = []
 
 
-		
+
 	def getUser(self, name):
 		for u in self.users:
 			if u.name == name:
@@ -36,17 +60,18 @@ class Exchange:
 		# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
 		return -1 
 
-	def generateBtcAddr(self, user_name, server):
-		address = server.getnewaddress()	
+	def generateBtcAddr(self, user_name, exc):
+		address = exc.getnewaddress()	
 		if (user_name is None):
 			print("[Info] - generateBtcAddr() - No user given, pubkey:"+address+"\t")
-			return server.getnewaddress()
+			return exc.getnewaddress()
 
 		# print("[Debug] getUser() return:",user)
-		# Add new address to user used btc address list
+		# Add new address to user used btc address list and monitored address list for exchange
 		user = self.getUser(user_name)
 		if (user is not -1):
 			user.addBtcAddress(address)
+			self.monitored_btc_addr.append(address)
 			print("[Info] - generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
 			return address
 		else:
