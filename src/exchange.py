@@ -17,13 +17,15 @@ class Exchange:
 		self.unconf_liq_tx = []
 		self.conf_btc_tx = []
 		self.unconf_btc_tx = []
+
+
 		
 	def getUser(self, name):
 		for u in self.users:
 			if u.name == name:
-				print("[Debug] getUser() - name:"+name+"\t return:"+str(u.uid)+" "+u.name)
+				# print("[Debug] getUser() - name:"+name+"\t return:"+str(u.uid)+" "+u.name)
 				return u
-		print("[Debug] getUser() - name:"+name+"\t return:-1")
+		# print("[Debug] getUser() - name:"+name+"\t return:-1")
 		return -1
 
 	def getUserID(self, name):
@@ -34,15 +36,21 @@ class Exchange:
 		# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
 		return -1 
 
-	def generateBtcAddr(self, user_name):
-		address = bexc.getnewaddress()	
+	def generateBtcAddr(self, user_name, server):
+		address = server.getnewaddress()	
+		if (user_name is None):
+			print("[Info] - generateBtcAddr() - No user given, pubkey:"+address+"\t")
+			return server.getnewaddress()
+
+		# print("[Debug] getUser() return:",user)
+		# Add new address to user used btc address list
 		user = self.getUser(user_name)
-		print("[Debug] getUser() return:",user)
 		if (user is not -1):
 			user.addBtcAddress(address)
+			print("[Info] - generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
+			return address
 		else:
 			sys.exit('getUser() returned -1, Is the user "%s" is registered in the exchange "%s"?'%(user_name, self.name))
-		print("[Info] - generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
 
 	def printUsers(self):
 		print("\n-=-=-= Exchange: "+self.name+" User List=-=-=-")
@@ -114,78 +122,8 @@ def startbitcoind(datadir, conf, args=""):
 
 	return AuthServiceProxy("http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
 
-def generateBtcDepositAddr(user):
-	pass
+def sendBtcTx(server, address, amount):	
+	server.sendtoaddress(address, amount)
 
 
-
-print("[Info] Initializing environment...")
-subprocess.call("./src/killdaemon.sh") 		# Kill all bitcoind and liquidd that are currently runniewng
-
-# Make data directories for each daemon
-b_datadir_min="./tmp/btc-min"	
-b_datadir_exc="./tmp/btc-exc"	
-b_datadir_ali="./tmp/btc-ali"	
-b_datadir_bob="./tmp/btc-bob"	
-
-# Remove pre-existing data
-try:
-	shutil.rmtree("./tmp")
-except FileNotFoundError:
-	pass
-
-#Create new data folders
-os.makedirs(b_datadir_min)
-os.makedirs(b_datadir_exc)
-# os.makedirs(b_datadir_ali)
-# os.makedirs(b_datadir_bob)
-
-# Configure the nodes by copying the configuration files from /src/
-shutil.copyfile("./src/bitcoin-miner.conf", b_datadir_min+"/bitcoin.conf")
-shutil.copyfile("./src/bitcoin-exchange.conf", b_datadir_exc+"/bitcoin.conf")
-time.sleep(.5)
-bminconf = loadConfig(b_datadir_min+"/bitcoin.conf")
-bexcconf = loadConfig(b_datadir_exc+"/bitcoin.conf")
-
-# Initialize bitcoind servers
-bmin = startbitcoind(b_datadir_min, bminconf)
-bexc = startbitcoind(b_datadir_exc, bexcconf)
-time.sleep(2)
-
-print("[Info] bitcoind servers initialized...")
-
-print("[Info] Initializing exchange and user instances...")
-excA = Exchange("A")
-excB = Exchange("B")
-alice = User("Alice", excA)
-tom = User("Tom", excA)
-bob = User("Bob", excB)
-
-
-excA.printUsers()
-excB.printUsers()
-
-# Generating some coins to spend
-bmin.generate(101)
-time.sleep(.5)
-print()
-
-excA.generateBtcAddr("Alice")
-excA.generateBtcAddr("Alice")
-excA.generateBtcAddr("Alice")
-excA.generateBtcAddr("Alice")
-excA.generateBtcAddr("Alice")
-excB.generateBtcAddr("Bob")
-excB.generateBtcAddr("Tom")
-
-alice.printBtcAddresses()
-bob.printBtcAddresses()
-tom.printBtcAddresses()
-
-excA.getUser("Tom")
-
-
-bmin.stop()
-bexc.stop()
-
-
+# if __name__ == '__main__':
