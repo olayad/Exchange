@@ -10,38 +10,61 @@ import shutil
 import json
 import threading
 
+CONFS = 3		# Number of confirmations required to move a tx from unconfirmed to confirmed
+
 # This thread purpose is to monitor listtransactions() and check if a new transaction has been recieved.
-class DaemonBtcTx(threading.Thread):
-	def __init__(self, tid, exchange):
+class DaemonTx(threading.Thread):
+	def __init__(self, tid, exc, bexc, chain):
+		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
 		threading.Thread.__init__(self)
-		self.exc = exchange
+		self.exc = exc 
 		self.tid = tid
+		self.bexc = bexc
+		self.chain = chain
 
 	def run(self):
 		print("[Info] Initializing "+str(self.tid)+" thread...")
-		print("[Info] Thread "+self.tid+" - Monitoring BTC address list...")
+		print("[Info] Thread "+self.tid+" - Monitoring "+self.chain+" address list...")
 
-		i = 0
-		while (i <= 2):
-			if (len(self.exc.monitored_btc_addr) == i):
-				pass
+		# Creating a new btc transaction 
+		while (True):
+			time.sleep(1)
+			try:
+				data = self.bexc.listtransactions()
+			except:
+				continue
+			if (len(data) == 0  ): #Need to add the case for when there are no new transactions
+				continue
 			else:
-				print("[Info] Tread - New monitored_btc_addr found! "+str(i)) 
-				for x in self.exc.monitored_btc_addr: # <--- do I really need monitored transactions to the exchange level?
-					print ("Thread address: "+x)
-				i += 1
+				for tx in data:
+					for item in tx:
+						# Unconfirmed transactions
+						if ((self.chain == "BTC") and (tx["confirmations"] < CONFS) and (tx["txid"] not in self.exc.btc_tx_set)):
+							print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
+							self.exc.unconf_btc_tx.append(new_tx)
+							self.exc.btc_tx_set.add(tx["txid"])
+							# For confirmed transactions
+
+							print("\n-=-=-= Set =-=-=-")
+							print(self.exc.btc_tx_set)
+							print("-=-=-=-=-=-=-=-=-=-")
+						else:
+							continue
+		
+
+
 
 class Exchange:
 	def __init__(self, name):
 		self.name = name
 		self.user_ctr = 0
 		self.users = []
-		self.conf_liq_tx = []
+		self.conf_liq_tx = []		# 3 confirmations required
 		self.unconf_liq_tx = []
 		self.conf_btc_tx = []
 		self.unconf_btc_tx = []
-		self.monitored_btc_addr = []
-
+		self.btc_tx_set = set()
 
 
 	def getUser(self, name):
@@ -60,18 +83,15 @@ class Exchange:
 		# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
 		return -1 
 
-	def generateBtcAddr(self, user_name, exc):
-		address = exc.getnewaddress()	
+	def generateBtcAddr(self, user_name, bexc):
+		address = bexc.getnewaddress()	
 		if (user_name is None):
 			print("[Info] - generateBtcAddr() - No user given, pubkey:"+address+"\t")
-			return exc.getnewaddress()
-
-		# print("[Debug] getUser() return:",user)
+			return bexc.getnewaddress()
 		# Add new address to user used btc address list and monitored address list for exchange
 		user = self.getUser(user_name)
 		if (user is not -1):
 			user.addBtcAddress(address)
-			self.monitored_btc_addr.append(address)
 			print("[Info] - generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
 			return address
 		else:
@@ -111,12 +131,17 @@ class User:
 
 
 class BtcTx:
-	def __init__ (self, txid, vout, address, amount, status):
-		self.txid = txid
-		self.vout = vout
+	def __init__ (self, account, address, category, amount, label, vout, confirmations, txid, time, status):
+		self.account = account
 		self.address = address
+		self.category = category
 		self.amount = amount
-		self.status = status	# 0: unconfirmed, 1: confirmed
+		self.label = label
+		self.vout = vout
+		self.confirmations = confirmations
+		self.txid = txid
+		self.time = time
+		self.status = status # 0: unconfirmed, 1: confirmed
 
 	def __repr__(self):
 		return str(self.txid)

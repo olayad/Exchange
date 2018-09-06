@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from exchange import DaemonBtcTx, Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
+from exchange import DaemonTx, Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
 import os
 import random
 import sys
@@ -64,10 +64,9 @@ if __name__ == '__main__':
 	tom = User("Tom", excA)
 	bob = User("Bob", excB)
 
-	daemonbtcA = DaemonBtcTx("btc-daemon-excA", excA)
-	DaemonBtcTx.daemon = True
+	daemonbtcA = DaemonTx("btc-daemon-excA", excA, bexc, "BTC")
+	DaemonTx.daemon = True
 	daemonbtcA.start()
-
 
 	# Generating some coins to spend
 	bmin.generate(101) 
@@ -111,17 +110,8 @@ if __name__ == '__main__':
 
 
 
-	time.sleep(1)
+	time.sleep(2)
 	sys.exit(1)
-
-
-
-	data = bexc.listtransactions()
-	for tx in data:
-		for k in tx:
-			print(k, tx[k])
-		print()
-
 
 
 
