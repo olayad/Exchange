@@ -12,7 +12,7 @@ import threading
 
 CONFS = 3		# Number of confirmations required to have a confirmed tx
 
-# Thread that monitors (infinte loop) listtransactions() to check if a new transaction has been recieved. 
+# Thread that monitors listtransactions() to check if a new transaction has been recieved. 
 # If a new transaction has been received, it appends to the exchange list of conf/unconf transaction.
 class NewTxDaemon(threading.Thread):
 	def __init__(self, tid, exc, bexc, chain):
@@ -47,13 +47,16 @@ class NewTxDaemon(threading.Thread):
 							print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
 							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
 							self.exc.unconf_btc_tx.append(new_tx)
+							#TODO: ADD the transaction to user
+
+
 							self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
 							self.printTxSet()
-
+						# New confirmed transaction found
 						elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
 							print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
 							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-							self.exc.unconf_btc_tx.append(new_tx)
+							self.exc.conf_btc_tx.append(new_tx)
 							self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
 							self.printTxSet()
 						else:	
@@ -68,7 +71,7 @@ class NewTxDaemon(threading.Thread):
 			print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 		
 
-# Daemon that is constantly updating confirmations in the conf/unconf exchange tx list
+# Thread that is checking for new confirmations in the conf/unconf exchange tx list
 class CheckConfsDaemon(threading.Thread):
 	def __init__(self, tid, exc, bexc, chain):
 		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
@@ -81,8 +84,15 @@ class CheckConfsDaemon(threading.Thread):
 	def run(self):
 		print("[Info] Initializing "+str(self.tid)+" thread, updating confirmations in txs list...")
 		while(True):
-			continue
-
+			time.sleep(1)
+			# Updating unconfirmed txs
+			for tx in self.exc.unconf_btc_tx:
+				try:
+					tx = self.bexc.gettransaction(tx.txid)
+					# print(tx)
+				except:
+					continue
+			
 
 
 class Exchange:
@@ -141,7 +151,7 @@ class User:
 	def __init__(self, name, exchange):
 		self.uid = exchange.user_ctr
 		self.name = name  	#TODO: name must be unique
-		self.conf_btc_txs = []
+		self.conf_btc_txs = [] 			#<------------ meed to change this to dictionary
 		self.unconf_btc_txs = []
 		self.btc_addr = []
 		exchange.users.append(self);
@@ -174,7 +184,7 @@ class BtcTx:
 		self.status = status # 0: unconfirmed, 1: confirmed
 
 	def __repr__(self):
-		return str(self.txid)
+		return str("BtcTx: "+self.txid)
 
 class LiqTx(BtcTx):
 	def __init__ (self, txid, vout, address, amount, status, blinder, assetblinder):

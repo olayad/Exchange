@@ -64,7 +64,13 @@ if __name__ == '__main__':
 	tom = User("Tom", excA)
 	bob = User("Bob", excB)
 
-
+	# Start daemon searching for new txs and updating confirmations
+	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excA, bexc, "BTC")
+	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excA, bexc, "BTC")
+	NewTxDaemon.daemon = True
+	CheckConfsDaemon.daemon = True
+	newtxdaemon_btc.start()
+	checkconfsdaemon_btc.start()
 
 	# Generating some coins to spend
 	bmin.generate(101) 
@@ -95,24 +101,17 @@ if __name__ == '__main__':
 	bali.sendtoaddress(alice_deposit_addr, 3)
 
 	time.sleep(3)
-	print("Min getrawmempool - aftert exc deposit:"+ str(bmin.getrawmempool()))
-	print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
-	print("Ali getrawmempool - aftert exc deposit:"+ str(bali.getrawmempool()))
-	print("Bob getrawmempool - aftert exc deposit:"+ str(bbob.getrawmempool()))
-
-	print()
+	# print("Min getrawmempool - aftert exc deposit:"+ str(bmin.getrawmempool()))
+	# print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
+	# print("Ali getrawmempool - aftert exc deposit:"+ str(bali.getrawmempool()))
+	# print("Bob getrawmempool - aftert exc deposit:"+ str(bbob.getrawmempool()))
+	# print()
 	# print("Exc listtransactions:"+ str(bexc.listtransactions()))
 	bmin.generate(3)
 	time.sleep(1)
 
-	# Start daemon searching for new txs and updating confirmations
-	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excA, bexc, "BTC")
-	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excA, bexc, "BTC")
-	NewTxDaemon.daemon = True
-	CheckConfsDaemon.daemon = True
-	newtxdaemon_btc.start()
-	checkconfsdaemon_btc.start()
-	
+
+
 	time.sleep(4)
 	sys.exit(1)
 
