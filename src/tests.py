@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from exchange import DaemonTx, Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
+from exchange import NewTxDaemon, CheckConfsDaemon, Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
 import os
 import random
 import sys
@@ -64,9 +64,7 @@ if __name__ == '__main__':
 	tom = User("Tom", excA)
 	bob = User("Bob", excB)
 
-	daemonbtcA = DaemonTx("btc-daemon-excA", excA, bexc, "BTC")
-	DaemonTx.daemon = True
-	daemonbtcA.start()
+
 
 	# Generating some coins to spend
 	bmin.generate(101) 
@@ -86,14 +84,11 @@ if __name__ == '__main__':
 	# print("Ali getblockchaininfo():"+ str(bali.getblockchaininfo()))
 	# print("Bob getblockchaininfo():"+ str(bbob.getblockchaininfo()))
 
-	
-	
-
 
 
 	#Alice goes to exchange and wants to deposit BTC, generates a deposit address in exchange
 	alice_deposit_addr = excA.generateBtcAddr("Alice", bexc)
-	alice.printBtcAddresses()
+	# alice.printBtcAddresses()
 	#Alice sends btc to exchange
 	bali.sendtoaddress(alice_deposit_addr, 1)
 	bali.sendtoaddress(alice_deposit_addr, 2)
@@ -106,11 +101,19 @@ if __name__ == '__main__':
 	print("Bob getrawmempool - aftert exc deposit:"+ str(bbob.getrawmempool()))
 
 	print()
-	print("Exc listtransactions:"+ str(bexc.listtransactions()))
+	# print("Exc listtransactions:"+ str(bexc.listtransactions()))
+	bmin.generate(3)
+	time.sleep(1)
 
-
-
-	time.sleep(2)
+	# Start daemon searching for new txs and updating confirmations
+	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excA, bexc, "BTC")
+	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excA, bexc, "BTC")
+	NewTxDaemon.daemon = True
+	CheckConfsDaemon.daemon = True
+	newtxdaemon_btc.start()
+	checkconfsdaemon_btc.start()
+	
+	time.sleep(4)
 	sys.exit(1)
 
 

@@ -10,10 +10,11 @@ import shutil
 import json
 import threading
 
-CONFS = 3		# Number of confirmations required to move a tx from unconfirmed to confirmed
+CONFS = 3		# Number of confirmations required to have a confirmed tx
 
-# This thread purpose is to monitor listtransactions() and check if a new transaction has been recieved.
-class DaemonTx(threading.Thread):
+# Thread that monitors (infinte loop) listtransactions() to check if a new transaction has been recieved. 
+# If a new transaction has been received, it appends to the exchange list of conf/unconf transaction.
+class NewTxDaemon(threading.Thread):
 	def __init__(self, tid, exc, bexc, chain):
 		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
 		threading.Thread.__init__(self)
@@ -23,35 +24,64 @@ class DaemonTx(threading.Thread):
 		self.chain = chain
 
 	def run(self):
-		print("[Info] Initializing "+str(self.tid)+" thread...")
-		print("[Info] Thread "+self.tid+" - Monitoring "+self.chain+" address list...")
-
-		# Creating a new btc transaction 
+		print("[Info] Initializing "+str(self.tid)+" thread, monitoring address list...")
+		# Checks if the recieved tx is alred included in the exchange btc_tx_set, if not,
+		# it creates a new tx instance and adds it to exchange list of conf and unconf txs
 		while (True):
 			time.sleep(1)
 			try:
-				data = self.bexc.listtransactions()
+				if (self.chain == "BTC"):
+					data = self.bexc.listtransactions()
+				else:
+					# TODO
+					print("This is for Liquid transactions")
 			except:
 				continue
-			if (len(data) == 0  ): #Need to add the case for when there are no new transactions
+			if (len(data) == 0  ): 		# Need to add the case for when there are no new transactions
 				continue
 			else:
 				for tx in data:
 					for item in tx:
-						# Unconfirmed transactions
-						if ((self.chain == "BTC") and (tx["confirmations"] < CONFS) and (tx["txid"] not in self.exc.btc_tx_set)):
+						# New unconfirmed transaction found
+						if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] < CONFS)):
 							print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
 							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
 							self.exc.unconf_btc_tx.append(new_tx)
-							self.exc.btc_tx_set.add(tx["txid"])
-							# For confirmed transactions
+							self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
+							self.printTxSet()
 
-							print("\n-=-=-= Set =-=-=-")
-							print(self.exc.btc_tx_set)
-							print("-=-=-=-=-=-=-=-=-=-")
-						else:
+						elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
+							print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
+							self.exc.unconf_btc_tx.append(new_tx)
+							self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
+							self.printTxSet()
+						else:	
 							continue
+
+	def printTxSet(self):
+			print("-=-=-= Printing "+self.chain+"_tx_set =-=-=-")
+			if (self.chain == "BTC"):
+				print(self.exc.btc_tx_set)
+			else:
+				print("TODO, LIQ tx set")
+			print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 		
+
+# Daemon that is constantly updating confirmations in the conf/unconf exchange tx list
+class CheckConfsDaemon(threading.Thread):
+	def __init__(self, tid, exc, bexc, chain):
+		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
+		threading.Thread.__init__(self)
+		self.tid = tid
+		self.exc = exc
+		self.bexc = bexc
+		self.chain = chain
+
+	def run(self):
+		print("[Info] Initializing "+str(self.tid)+" thread, updating confirmations in txs list...")
+		while(True):
+			continue
 
 
 
@@ -86,13 +116,13 @@ class Exchange:
 	def generateBtcAddr(self, user_name, bexc):
 		address = bexc.getnewaddress()	
 		if (user_name is None):
-			print("[Info] - generateBtcAddr() - No user given, pubkey:"+address+"\t")
+			print("[Info] generateBtcAddr() - No user given, pubkey:"+address+"\t")
 			return bexc.getnewaddress()
 		# Add new address to user used btc address list and monitored address list for exchange
 		user = self.getUser(user_name)
 		if (user is not -1):
 			user.addBtcAddress(address)
-			print("[Info] - generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
+			print("[Info] generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
 			return address
 		else:
 			sys.exit('getUser() returned -1, Is the user "%s" is registered in the exchange "%s"?'%(user_name, self.name))
@@ -165,7 +195,7 @@ def loadConfig(filename):
 
 def startbitcoind(datadir, conf, args=""):
 	command = "bitcoind -datadir="+datadir+" -conf=./bitcoin.conf"
-	print("[Info] - Initializing "+command)
+	print("[Info] Initializing "+command)
 	subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 	# print("[Debug] startbitcoind - Initilizing bitcoind with command: ", command)
 	# print("[DEBUG] startbitcoind - http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
