@@ -58,15 +58,15 @@ if __name__ == '__main__':
 	bmin, bexc, bbob, bali = initEnvironment()
 
 	print("[Info] Initializing exchange and user instances...")
-	excA = Exchange("A")
-	excB = Exchange("B")
-	alice = User("Alice", excA)
-	tom = User("Tom", excA)
-	bob = User("Bob", excB)
+	excX = Exchange("X")
+	excY = Exchange("Y")
+	alice = User("Alice", excX)
+	tom = User("Tom", excX)
+	bob = User("Bob", excY)
 
 	# Start daemon searching for new txs and updating confirmations
-	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excA, bexc, "BTC")
-	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excA, bexc, "BTC")
+	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excX, bexc, "BTC")
+	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excX, bexc, "BTC")
 	NewTxDaemon.daemon = True
 	CheckConfsDaemon.daemon = True
 	newtxdaemon_btc.start()
@@ -93,16 +93,21 @@ if __name__ == '__main__':
 
 
 	#Alice goes to exchange and wants to deposit BTC, generates a deposit address in exchange
-	alice_deposit_addr = excA.generateBtcAddr("Alice", bexc)
-	# alice.printBtcAddresses()
-	#Alice sends btc to exchange
+	alice_deposit_addr = excX.generateBtcAddr(alice, bexc)
+	alice.printBtcAddresses()
 	bali.sendtoaddress(alice_deposit_addr, 1)
 	bali.sendtoaddress(alice_deposit_addr, 2)
 	bali.sendtoaddress(alice_deposit_addr, 3)
 
+	tom_deposit_addr = excX.generateBtcAddr(tom, bexc)
+	tom.printBtcAddresses()
+	bali.sendtoaddress(tom_deposit_addr, 1)
+	# bali.sendtoaddress(alice_deposit_addr, 1)
+	# bali.sendtoaddress(alice_deposit_addr, 1)
+
 	time.sleep(3)
 	# print("Min getrawmempool - aftert exc deposit:"+ str(bmin.getrawmempool()))
-	# print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
+	print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
 	# print("Ali getrawmempool - aftert exc deposit:"+ str(bali.getrawmempool()))
 	# print("Bob getrawmempool - aftert exc deposit:"+ str(bbob.getrawmempool()))
 	# print()
@@ -148,5 +153,5 @@ if __name__ == '__main__':
 
 
 
-	# excA.printUsers()
-	# excB.printUsers()
+	# excX.printUsers()
+	# excY.printUsers()

@@ -24,6 +24,8 @@ class NewTxDaemon(threading.Thread):
 		self.chain = chain
 
 	def run(self):
+		# TODO: What happens if I get a transaction without user?
+
 		print("[Info] Initializing "+str(self.tid)+" thread, monitoring address list...")
 		# Checks if the recieved tx is alred included in the exchange btc_tx_set, if not,
 		# it creates a new tx instance and adds it to exchange list of conf and unconf txs
@@ -37,30 +39,46 @@ class NewTxDaemon(threading.Thread):
 					print("This is for Liquid transactions")
 			except:
 				continue
-			if (len(data) == 0  ): 		# Need to add the case for when there are no new transactions
+			if (len(data) == 0): 		# Case for when there are no new transactions
 				continue
 			else:
 				for tx in data:
-					for item in tx:
-						# New unconfirmed transaction found
-						if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] < CONFS)):
-							print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
-							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-							self.exc.unconf_btc_tx.append(new_tx)
-							#TODO: ADD the transaction to user
+
+					# Find user from the recepient adddress
+					user = self.exc.address_user[tx["address"]]
+					# New unconfirmed transaction found
+					if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] < CONFS)):
+						print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+						new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
+
+						print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
+						# Add the transaction to user
+						if (user is not None):
+							user.unconf_btc_txs[tx["txid"]] = new_tx
+						self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
+						print("+++++++++++++++++unconf_btc_tx:")
+						for m in user.unconf_btc_txs:
+							print(m)
+
+					# New confirmed transaction found
+					elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
+						print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+						new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
+						
+						print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
+						# Add the transaction to user
+						if (user is not None):
+							user.conf_btc_txs[tx["txid"]] = new_tx
+						self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
 
 
-							self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
-							self.printTxSet()
-						# New confirmed transaction found
-						elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
-							print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
-							new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-							self.exc.conf_btc_tx.append(new_tx)
-							self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
-							self.printTxSet()
-						else:	
-							continue
+
+						# self.printTxSet()
+						pass
+					else:
+						continue
+
+					print()
 
 	def printTxSet(self):
 			print("-=-=-= Printing "+self.chain+"_tx_set =-=-=-")
@@ -86,12 +104,12 @@ class CheckConfsDaemon(threading.Thread):
 		while(True):
 			time.sleep(1)
 			# Updating unconfirmed txs
-			for tx in self.exc.unconf_btc_tx:
-				try:
-					tx = self.bexc.gettransaction(tx.txid)
-					# print(tx)
-				except:
-					continue
+			# for tx in self.exc.unconf_btc_tx:
+			# 	try:
+			# 		tx = self.bexc.gettransaction(tx.txid)
+			# 		# print(tx)
+			# 	except:
+			# 		continue
 			
 
 
@@ -100,42 +118,44 @@ class Exchange:
 		self.name = name
 		self.user_ctr = 0
 		self.users = []
-		self.conf_liq_tx = []		# 3 confirmations required
-		self.unconf_liq_tx = []
-		self.conf_btc_tx = []
-		self.unconf_btc_tx = []
+
+		self.address_user = {}		# Retuns a user for a given deposit address
 		self.btc_tx_set = set()
 
 
-	def getUser(self, name):
-		for u in self.users:
-			if u.name == name:
-				# print("[Debug] getUser() - name:"+name+"\t return:"+str(u.uid)+" "+u.name)
-				return u
-		# print("[Debug] getUser() - name:"+name+"\t return:-1")
-		return -1
+	# def getUser(self, name):
+	# 	for u in self.users:
+	# 		if u.name == name:
+	# 			# print("[Debug] getUser() - name:"+name+"\t return:"+str(u.uid)+" "+u.name)
+	# 			return u
+	# 	# print("[Debug] getUser() - name:"+name+"\t return:-1")
+	# 	return -1
 
-	def getUserID(self, name):
-		for u in self.users:
-			if u.name == name:
-				# print("[DEBUG] getUserID() - Returning user_name:"+name+"\tuid:"+str(u.uid))
-				return u.uid
-		# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
-		return -1 
+	# def getUserID(self, name):
+	# 	for u in self.users:
+	# 		if u.name == name:
+	# 			# print("[DEBUG] getUserID() - Returning user_name:"+name+"\tuid:"+str(u.uid))
+	# 			return u.uid
+	# 	# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
+	# 	return -1 
 
-	def generateBtcAddr(self, user_name, bexc):
+	def generateBtcAddr(self, user, bexc):
+		assert(isinstance(user, User) or None)
+
 		address = bexc.getnewaddress()	
-		if (user_name is None):
-			print("[Info] generateBtcAddr() - No user given, pubkey:"+address+"\t")
+		if (user is None):
+			print("[Debug] generateBtcAddr() - No user given, pubkey:"+address+"\t")
 			return bexc.getnewaddress()
 		# Add new address to user used btc address list and monitored address list for exchange
-		user = self.getUser(user_name)
-		if (user is not -1):
-			user.addBtcAddress(address)
-			print("[Info] generateBtcAddr() pubkey:"+address+" \t | User:"+user_name)
-			return address
+		# user = self.getUser(user)
+
 		else:
-			sys.exit('getUser() returned -1, Is the user "%s" is registered in the exchange "%s"?'%(user_name, self.name))
+			user.btc_addr.add(address) 			# Adds new adddress to the user set of address 
+			self.address_user[address] = user 	# Adds new address to the exchange dict Address:User
+			print("[Debug] generateBtcAddr() pubkey:"+address+" \t | User:"+user.name)
+			return address
+		# else:
+		# 	sys.exit('getUser() returned -1, Is the user "%s" is registered in the exchange "%s"?'%(user, self.name))
 
 	def printUsers(self):
 		print("\n-=-=-= Exchange: "+self.name+" User List=-=-=-")
@@ -151,17 +171,16 @@ class User:
 	def __init__(self, name, exchange):
 		self.uid = exchange.user_ctr
 		self.name = name  	#TODO: name must be unique
-		self.conf_btc_txs = [] 			#<------------ meed to change this to dictionary
-		self.unconf_btc_txs = []
-		self.btc_addr = []
+		self.conf_btc_txs = {} 			
+		self.unconf_btc_txs = {}
+		self.conf_liq_txs = {}		
+		self.unconf_liq_txs = {}
+		self.btc_addr = set()
 		exchange.users.append(self);
 		exchange.user_ctr += 1
 
 	def __repr__(self):
 		return str(self.__dict__)
-
-	def addBtcAddress(self, address):
-		self.btc_addr.append(address)
 
 	def printBtcAddresses(self):
 		print("\n-=-=-= PubKeys: "+self.name+" =-=-=-")
