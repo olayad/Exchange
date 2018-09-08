@@ -44,7 +44,6 @@ class NewTxDaemon(threading.Thread):
 				continue
 			else:
 				for tx in data:
-
 					# Find user from the recepient adddress
 					user = self.exc.address_user[tx["address"]]
 					# New unconfirmed transaction found
@@ -80,7 +79,7 @@ class NewTxDaemon(threading.Thread):
 					print()
 
 	def printTxSet(self):
-			print("-=-=-= Printing "+self.chain+"_tx_set =-=-=-")
+			print("-=-=-= Printing "+self.exc+self.chain+"_tx_set =-=-=-")
 			if (self.chain == "BTC"):
 				print(self.exc.btc_tx_set)
 			else:
@@ -105,12 +104,12 @@ class CheckConfsDaemon(threading.Thread):
 			time.sleep(1)
 			# Updating unconfirmed txs
 			# for tx in self.exc.unconf_btc_tx:
-			# 	try:0
-			# 		tx = self.bexc.gettransaction(tx.txid)
-			# 		# print(tx)
-			# 	except:
-			# 		continue
-			
+			try:0
+				tx = self.bexc.gettransaction(tx.txid)
+				# print(tx)
+			except:
+				continue
+		
 
 
 class Exchange:
