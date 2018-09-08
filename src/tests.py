@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-from exchange import NewTxDaemon, CheckConfsDaemon, Exchange, User, BtcTx, LiqTx, loadConfig, startbitcoind
+from exchange import NewTxDaemon, CheckConfsDaemon, Exchange, User, BtcTx, LiqTx
+from test_framework.authproxy import AuthServiceProxy, JSONRPCException
+
 import os
 import random
 import sys
@@ -7,6 +9,24 @@ import time
 import subprocess
 import shutil
 import json
+
+def loadConfig(filename):
+	conf = {}
+	with open(filename) as f:
+		for line in f:
+			if len(line) == 0 or line[0] == "#" or len(line.split("=")) != 2:
+				continue
+			conf[line.split("=")[0]] = line.split("=")[1].strip()
+	conf["filename"] = filename
+	return conf
+
+def startbitcoind(datadir, conf, args=""):
+	command = "bitcoind -datadir="+datadir+" -conf=./bitcoin.conf"
+	print("[Info] Initializing "+command)
+	subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+	# print("[Debug] startbitcoind - Initilizing bitcoind with command: ", command)
+	# print("[DEBUG] startbitcoind - http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
+	return AuthServiceProxy("http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
 
 def initEnvironment():
 	print("[Info] Initializing environment...")
@@ -119,7 +139,6 @@ if __name__ == '__main__':
 
 	time.sleep(4)
 	sys.exit(1)
-
 
 
 

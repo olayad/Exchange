@@ -29,7 +29,8 @@ class NewTxDaemon(threading.Thread):
 		print("[Info] Initializing "+str(self.tid)+" thread, monitoring address list...")
 		# Checks if the recieved tx is alred included in the exchange btc_tx_set, if not,
 		# it creates a new tx instance and adds it to exchange list of conf and unconf txs
-		while (True):
+		while (+
+			True):
 			time.sleep(1)
 			try:
 				if (self.chain == "BTC"):
@@ -50,8 +51,8 @@ class NewTxDaemon(threading.Thread):
 					if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] < CONFS)):
 						print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
 						new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-
 						print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
+					
 						# Add the transaction to user
 						if (user is not None):
 							user.unconf_btc_txs[tx["txid"]] = new_tx
@@ -64,17 +65,15 @@ class NewTxDaemon(threading.Thread):
 					elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
 						print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
 						new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-						
 						print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
+					
 						# Add the transaction to user
 						if (user is not None):
 							user.conf_btc_txs[tx["txid"]] = new_tx
 						self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
 
 
-
-						# self.printTxSet()
-						pass
+					# TODO Liq business logic
 					else:
 						continue
 
@@ -85,11 +84,12 @@ class NewTxDaemon(threading.Thread):
 			if (self.chain == "BTC"):
 				print(self.exc.btc_tx_set)
 			else:
+				# TODO
 				print("TODO, LIQ tx set")
 			print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 		
 
-# Thread that is checking for new confirmations in the conf/unconf exchange tx list
+# Thread that is updating confirmations in the conf/unconf user tx list
 class CheckConfsDaemon(threading.Thread):
 	def __init__(self, tid, exc, bexc, chain):
 		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
@@ -105,7 +105,7 @@ class CheckConfsDaemon(threading.Thread):
 			time.sleep(1)
 			# Updating unconfirmed txs
 			# for tx in self.exc.unconf_btc_tx:
-			# 	try:
+			# 	try:0
 			# 		tx = self.bexc.gettransaction(tx.txid)
 			# 		# print(tx)
 			# 	except:
@@ -130,7 +130,7 @@ class Exchange:
 	# 			return u
 	# 	# print("[Debug] getUser() - name:"+name+"\t return:-1")
 	# 	return -1
-
+	
 	# def getUserID(self, name):
 	# 	for u in self.users:
 	# 		if u.name == name:
@@ -140,28 +140,23 @@ class Exchange:
 	# 	return -1 
 
 	def generateBtcAddr(self, user, bexc):
-		assert(isinstance(user, User) or None)
-
+		assert(isinstance(user, User) or (user == None))
 		address = bexc.getnewaddress()	
 		if (user is None):
 			print("[Debug] generateBtcAddr() - No user given, pubkey:"+address+"\t")
 			return bexc.getnewaddress()
-		# Add new address to user used btc address list and monitored address list for exchange
-		# user = self.getUser(user)
-
+	
+		# Add new address to user's used btc address list and monitored address list for exchange
 		else:
 			user.btc_addr.add(address) 			# Adds new adddress to the user set of address 
 			self.address_user[address] = user 	# Adds new address to the exchange dict Address:User
 			print("[Debug] generateBtcAddr() pubkey:"+address+" \t | User:"+user.name)
 			return address
-		# else:
-		# 	sys.exit('getUser() returned -1, Is the user "%s" is registered in the exchange "%s"?'%(user, self.name))
 
 	def printUsers(self):
 		print("\n-=-=-= Exchange: "+self.name+" User List=-=-=-")
 		print('{0:<3} {1:<10} {2:<10}'.format("ID", "User_Name", "BTC_balance"))
 		for u in self.users:
-
 			print('{0:3d} {1:<10} {2:10d}'.format(u.uid, u.name, 0))
 			# print("ID: "+str(u.uid)+" \tUser_name: "+u.name+"\t\t"+"BTC_balance: ")
 		print("Total users:", self.user_ctr)
@@ -210,29 +205,6 @@ class LiqTx(BtcTx):
 		super().__init__(txid, vout, address, amount, status)
 		self.blinder = blinder
 		self.assetblinder = assetblinder
-
-
-def loadConfig(filename):
-	conf = {}
-	with open(filename) as f:
-		for line in f:
-			if len(line) == 0 or line[0] == "#" or len(line.split("=")) != 2:
-				continue
-			conf[line.split("=")[0]] = line.split("=")[1].strip()
-	conf["filename"] = filename
-	return conf
-
-def startbitcoind(datadir, conf, args=""):
-	command = "bitcoind -datadir="+datadir+" -conf=./bitcoin.conf"
-	print("[Info] Initializing "+command)
-	subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-	# print("[Debug] startbitcoind - Initilizing bitcoind with command: ", command)
-	# print("[DEBUG] startbitcoind - http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
-
-	return AuthServiceProxy("http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
-
-def sendBtcTx(server, address, amount):	
-	server.sendtoaddress(address, amount)
 
 
 # if __name__ == '__main__':
