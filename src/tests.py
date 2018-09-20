@@ -30,7 +30,10 @@ def startbitcoind(datadir, conf, args=""):
 
 def initEnvironment():
 	print("[Info] Initializing environment...")
-	subprocess.call("./src/killdaemon.sh")	# Kill all bitcoind and liquidd that are currently running
+	try:
+		subprocess.call("./src/killdaemon.sh")	# Kill all bitcoind and liquidd that are currently running
+	except:
+		subprocess.call("./killdaemon.sh")
 
 	# Make data directories for each daemon
 	b_datadir_min="./tmp/btc-min"	

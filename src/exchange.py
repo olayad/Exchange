@@ -23,6 +23,41 @@ class NewTxDaemon(threading.Thread):
 		self.bexc = bexc
 		self.chain = chain
 
+	def process_new_tx(self, tx):
+		print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+
+		# Find user from the recepient adddress
+		user = self.exc.address_user[tx["address"]]
+
+		if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] < CONFS)):
+
+			print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+			new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
+			print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
+       	
+			# Add the transaction to user
+			if (user is not None):
+				user.unconf_btc_txs[tx["txid"]] = new_tx
+			self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
+			print("+++++++++++++++++unconf_btc_tx:")
+			for m in user.unconf_btc_txs:
+				print(m)
+
+		# New confirmed transaction found
+		elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
+			print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+			new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
+			print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
+		
+			# Add the transaction to user
+			if (user is not None):
+				user.conf_btc_txs[tx["txid"]] = new_tx
+			self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
+			print("*****************nothing do here")
+
+		# TODO: Liq business logic
+		else:
+			pass
 	def run(self):
 		# TODO: What happens if I get a transaction without user?
 
@@ -40,43 +75,13 @@ class NewTxDaemon(threading.Thread):
 					print("This is for Liquid transactions")
 			except:
 				continue
-			if (len(data) == 0): 		# Case for when there are no new transactions
+			if (len(data) == 0): 	# Case for when there are no new transactions
 				continue
 			else:
 				for tx in data:
-					# Find user from the recepient adddress
-					user = self.exc.address_user[tx["address"]]
-					# New unconfirmed transaction found
-					if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] < CONFS)):
-						print("[Debug] - "+self.chain+" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
-						new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-						print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
-					
-						# Add the transaction to user
-						if (user is not None):
-							user.unconf_btc_txs[tx["txid"]] = new_tx
-						self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
-						print("+++++++++++++++++unconf_btc_tx:")
-						for m in user.unconf_btc_txs:
-							print(m)
-
-					# New confirmed transaction found
-					elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) and (tx["confirmations"] >= CONFS)):
-						print("[Debug] - "+self.chain+" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
-						new_tx = BtcTx(tx["account"], tx["address"], tx["category"], tx["amount"], tx["label"], tx["vout"], tx["confirmations"], tx["txid"], tx["time"], 0)
-						print("[Debug] NewTxDaemon - User of the deposit address is:"+ user.name+" ,  address:"+tx["address"])
-					
-						# Add the transaction to user
-						if (user is not None):
-							user.conf_btc_txs[tx["txid"]] = new_tx
-						self.exc.btc_tx_set.add(tx["txid"])		# Adds to the set monitored by NewTxDaemon
-
-
-					# TODO Liq business logic
-					else:
-						continue
-
+					self.process_new_tx(tx)
 					print()
+	
 
 	def printTxSet(self):
 			print("-=-=-= Printing "+self.exc+self.chain+"_tx_set =-=-=-")
@@ -104,7 +109,7 @@ class CheckConfsDaemon(threading.Thread):
 			time.sleep(1)
 			# Updating unconfirmed txs
 			# for tx in self.exc.unconf_btc_tx:
-			try:0
+			try:
 				tx = self.bexc.gettransaction(tx.txid)
 				# print(tx)
 			except:
