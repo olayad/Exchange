@@ -25,13 +25,17 @@ def startbitcoind(datadir, conf, args=""):
 	print("[Info] Initializing "+command)
 	subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 	# print("[Debug] startbitcoind - Initilizing bitcoind with command: ", command)
-	# print("[DEBUG] startbitcoind - http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
-	return AuthServiceProxy("http://"+conf["rpcuser"]+":"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
+	# print("[DEBUG] startbitcoind - http://"+conf["rpcuser"]+":
+	#	"+conf["rpcpassword"]+"@127.0.0.1:"+conf["rpcport"])
+	return AuthServiceProxy("http://"+conf["rpcuser"]+":"
+				+conf["rpcpassword"]+"@127.0.0.1:"
+				+conf["rpcport"])
 
 def initEnvironment():
 	print("[Info] Initializing environment...")
 	try:
-		subprocess.call("./src/killdaemon.sh")	# Kill all bitcoind and liquidd that are currently running
+		# Kill all bitcoind and liquidd that are currently running
+		subprocess.call("./src/killdaemon.sh")
 	except:
 		subprocess.call("./killdaemon.sh")
 
