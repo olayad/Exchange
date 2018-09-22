@@ -26,24 +26,21 @@ class NewTxDaemon(threading.Thread):
 
 
 	def process_new_tx(self, tx):
-		print("[Debug] - "+self.chain+
-			" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
-
 		# Find user from the recepient adddress
 		user = self.exc.address_user[tx["address"]]
 
+		# New UNCONF tx found
 		if (self.chain == "BTC" 
 			and tx["txid"] not in self.exc.btc_tx_set 
 			and tx["confirmations"] < CONFS):
 
-			print("[Debug] - "+self.chain+
-				" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+			print("[Debug] "+self.chain+
+				" tx is UNCONFIRMED and not in btc_tx_set - txid: "+tx["txid"])
 			new_tx = BtcTx(tx["account"], tx["address"], tx["category"],
 					tx["amount"], tx["label"], tx["vout"], 
 					tx["confirmations"], tx["txid"], tx["time"], 0)
 			print("[Debug] NewTxDaemon - User of the deposit address is:"
 				+ user.name+" ,  address:"+tx["address"])
-       	
 			# Add the transaction to user
 			if user is not None:
 				user.unconf_btc_txs[tx["txid"]] = new_tx
@@ -51,25 +48,23 @@ class NewTxDaemon(threading.Thread):
 			self.exc.btc_tx_set.add(tx["txid"])	
 			self.exc.print_monitored_tx()
 
-		# New confirmed transaction found
+		# New CONF tx found
 		elif (self.chain == "BTC"
 			and tx["txid"] not in self.exc.btc_tx_set
 			and tx["confirmations"] >= CONFS):
 
-			print("[Debug] - "+self.chain+
-				" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
+			print("[Debug] "+self.chain+
+				" tx is CONF and not in btc_tx_set - txid: "+tx["txid"])
 			new_tx = BtcTx(tx["account"], tx["address"], tx["category"],
 					tx["amount"], tx["label"], tx["vout"], 
 					tx["confirmations"], tx["txid"], tx["time"], 0)
 			print("[Debug] NewTxDaemon - User of the deposit address is:"
 				+ user.name+" ,  address:"+tx["address"])
-		
 			# Add the transaction to user
 			if user is not None:
 				user.conf_btc_txs[tx["txid"]] = new_tx
 			# Adds to the set monitored by NewTxDaemon
 			self.exc.btc_tx_set.add(tx["txid"])			
-			print("*****************nothing do here")
 
 		# TODO: Liq business logic
 		else:
@@ -97,8 +92,6 @@ class NewTxDaemon(threading.Thread):
 			else:
 				for tx in data:
 					self.process_new_tx(tx)
-					print()
-	
 
 	def printTxSet(self):
 			print("-=-=-= Printing "+self.exc+self.chain+"_tx_set =-=-=-")

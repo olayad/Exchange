@@ -90,7 +90,7 @@ if __name__ == '__main__':
 	alice = User("Alice", excX)
 	tom = User("Tom", excX)
 	bob = User("Bob", excY)
-
+	
 	# Start daemon searching for new txs and updating confirmations
 	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excX, bexc, "BTC")
 	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excX, bexc, "BTC")
@@ -118,23 +118,22 @@ if __name__ == '__main__':
 	# print("Bob getblockchaininfo():"+ str(bbob.getblockchaininfo()))
 
 
-
-	#Alice goes to exchange and wants to deposit BTC, generates a deposit address in exchange
+	# Alice goes to exchange and wants to deposit BTC,
+	# generates a deposit address in exchange
+	# and sends some coins
 	alice_deposit_addr = excX.generateBtcAddr(alice, bexc)
 	alice.printBtcAddresses()
 	bali.sendtoaddress(alice_deposit_addr, 1)
 	bali.sendtoaddress(alice_deposit_addr, 2)
 	bali.sendtoaddress(alice_deposit_addr, 3)
-
+	# Tom deposits coins on the exchange
 	tom_deposit_addr = excX.generateBtcAddr(tom, bexc)
 	tom.printBtcAddresses()
 	bali.sendtoaddress(tom_deposit_addr, 1)
-	# bali.sendtoaddress(alice_deposit_addr, 1)
-	# bali.sendtoaddress(alice_deposit_addr, 1)
-
 	time.sleep(3)
+
 	# print("Min getrawmempool - aftert exc deposit:"+ str(bmin.getrawmempool()))
-	print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
+	# print("Exc getrawmempool - aftert exc deposit:"+ str(bexc.getrawmempool()))
 	# print("Ali getrawmempool - aftert exc deposit:"+ str(bali.getrawmempool()))
 	# print("Bob getrawmempool - aftert exc deposit:"+ str(bbob.getrawmempool()))
 	# print()
@@ -144,14 +143,9 @@ if __name__ == '__main__':
 
 
 
-	time.sleep(4)
 	sys.exit(1)
 
 
-
-
-
-	bmin.generate(1)
 	time.sleep(3)
 
 	print()
@@ -175,9 +169,3 @@ if __name__ == '__main__':
 	bmin.stop()
 	bexc.stop()
 	bali.stop()
-	bbob.stop()
-
-
-
-	# excX.printUsers()
-	# excY.printUsers()
