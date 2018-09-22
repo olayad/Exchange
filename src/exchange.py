@@ -24,6 +24,7 @@ class NewTxDaemon(threading.Thread):
 		self.bexc = bexc
 		self.chain = chain
 
+
 	def process_new_tx(self, tx):
 		print("[Debug] - "+self.chain+
 			" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
@@ -31,8 +32,9 @@ class NewTxDaemon(threading.Thread):
 		# Find user from the recepient adddress
 		user = self.exc.address_user[tx["address"]]
 
-		if ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set)
-			 and (tx["confirmations"] < CONFS)):
+		if (self.chain == "BTC" 
+			and tx["txid"] not in self.exc.btc_tx_set 
+			and tx["confirmations"] < CONFS):
 
 			print("[Debug] - "+self.chain+
 				" tx is UNCONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
@@ -43,17 +45,16 @@ class NewTxDaemon(threading.Thread):
 				+ user.name+" ,  address:"+tx["address"])
        	
 			# Add the transaction to user
-			if (user is not None):
+			if user is not None:
 				user.unconf_btc_txs[tx["txid"]] = new_tx
 			# Adds to the set monitored by NewTxDaemon
 			self.exc.btc_tx_set.add(tx["txid"])	
-			print("+++++++++++++++++unconf_btc_tx:")
-			for m in user.unconf_btc_txs:
-				print(m)
+			self.exc.print_monitored_tx()
 
 		# New confirmed transaction found
-		elif ((self.chain == "BTC") and (tx["txid"] not in self.exc.btc_tx_set) 
-			and (tx["confirmations"] >= CONFS)):
+		elif (self.chain == "BTC"
+			and tx["txid"] not in self.exc.btc_tx_set
+			and tx["confirmations"] >= CONFS):
 
 			print("[Debug] - "+self.chain+
 				" tx is CONFIRMED and NOT in btc_tx_set - txid: "+tx["txid"])
@@ -64,7 +65,7 @@ class NewTxDaemon(threading.Thread):
 				+ user.name+" ,  address:"+tx["address"])
 		
 			# Add the transaction to user
-			if (user is not None):
+			if user is not None:
 				user.conf_btc_txs[tx["txid"]] = new_tx
 			# Adds to the set monitored by NewTxDaemon
 			self.exc.btc_tx_set.add(tx["txid"])			
@@ -73,6 +74,7 @@ class NewTxDaemon(threading.Thread):
 		# TODO: Liq business logic
 		else:
 			pass
+
 	def run(self):
 		# TODO: What happens if I get a transaction without user?
 
@@ -161,10 +163,15 @@ class Exchange:
 	# 	# print("[DEBUG] getUserID() - Returning -1 for user_name:"+name)
 	# 	return -1 
 
+	def print_monitored_tx(self):
+		print("[Debug] -=-=-= Printing list of monitored NewTxDaemon =-=-=-Exc:"+self.name)
+		for tx in self.btc_tx_set:
+				print("\t"+tx)
+
 	def generateBtcAddr(self, user, bexc):
 		assert(isinstance(user, User) or (user == None))
 		address = bexc.getnewaddress()	
-		if (user is None):
+		if user is None:
 			print("[Debug] generateBtcAddr() - No user given, pubkey:"+address+"\t")
 			return bexc.getnewaddress()
 	
