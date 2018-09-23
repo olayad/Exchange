@@ -12,18 +12,43 @@ import threading
 
 CONFS = 3	# Number of confirmations required to have a confirmed tx
 
+# Thread that is updating confirmations in the conf/unconf user tx list
+class updateConfsDaemon(threading.Thread):
+	def __init__(self, tid, exc, bexc, chain):
+		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
+		assert ((exc is not None) and (bexc is not None))
+		threading.Thread.__init__(self)
+		self.exc = exc
+		self.tid = tid
+		self.bexc = bexc
+		self.chain = chain 
+
+	def run(self):
+		print("[Info] Initializing "+str(self.tid)+
+			" thread, updating confirmations in user txs list...")
+		while(True):
+			time.sleep(1)
+			# Updating unconfirmed txs
+			# for tx in self.exc.unconf_btc_tx:
+			try:
+				tx = self.bexc.gettransaction(tx.txid)
+				# print(tx)
+			except:
+				continue
+	
+
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
 # If a new transaction has been received, it appends to the exchange
 # list of conf/unconf transaction. 
 class NewTxDaemon(threading.Thread):
 	def __init__(self, tid, exc, bexc, chain):
 		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
+		assert((exc is not None) and bexc is not None))
 		threading.Thread.__init__(self)
 		self.exc = exc 
 		self.tid = tid
 		self.bexc = bexc
 		self.chain = chain
-
 
 	def process_new_tx(self, tx):
 		# Find user from the recepient adddress
@@ -103,31 +128,7 @@ class NewTxDaemon(threading.Thread):
 			print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 		
 
-# Thread that is updating confirmations in the conf/unconf user tx list
-class CheckConfsDaemon(threading.Thread):
-	def __init__(self, tid, exc, bexc, chain):
-		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
-		threading.Thread.__init__(self)
-		self.tid = tid
-		self.exc = exc
-		self.bexc = bexc
-		self.chain = chain
-
-	def run(self):
-		print("[Info] Initializing "+str(self.tid)+
-			" thread, updating confirmations in txs list...")
-		while(True):
-			time.sleep(1)
-			# Updating unconfirmed txs
-			# for tx in self.exc.unconf_btc_tx:
-			try:
-				tx = self.bexc.gettransaction(tx.txid)
-				# print(tx)
-			except:
-				continue
 		
-
-
 class Exchange:
 	def __init__(self, name):
 		self.name = name
@@ -136,7 +137,6 @@ class Exchange:
 
 		self.address_user = {}	# Retuns a user for a given deposit address
 		self.btc_tx_set = set()
-
 
 	# def getUser(self, name):
 	# 	for u in self.users:
@@ -207,7 +207,6 @@ class User:
 			print('{0:<6}'.format(p))
 		print("-=-=-= End of List =-=-=-")
 
-
 class BtcTx:
 	def __init__ (self, account, address, category, amount,
 			 label, vout, confirmations, txid, time, status):
@@ -230,6 +229,5 @@ class LiqTx(BtcTx):
 		super().__init__(txid, vout, address, amount, status)
 		self.blinder = blinder
 		self.assetblinder = assetblinder
-
 
 # if __name__ == '__main__':

@@ -92,12 +92,12 @@ if __name__ == '__main__':
 	bob = User("Bob", excY)
 	
 	# Start daemon searching for new txs and updating confirmations
-	newtxdaemon_btc = NewTxDaemon("newtxdaemon_btc", excX, bexc, "BTC")
-	checkconfsdaemon_btc = CheckConfsDaemon("checkconfsdaemon_btc", excX, bexc, "BTC")
+	newtxdaemon_btc = NewTxDaemon("newTxDaemon_btc", excX, bexc, "BTC")
+	checkconfsdaemon_btc = updateConfsDaemon("updateConfsDaemon_btc", excX, bexc, "BTC")
 	NewTxDaemon.daemon = True
-	CheckConfsDaemon.daemon = True
+	updateConfsDaemon.daemon = True
 	newtxdaemon_btc.start()
-	checkconfsdaemon_btc.start()
+	updateConfsDaemon.start()
 
 	# Generating some coins to spend
 	bmin.generate(101) 
