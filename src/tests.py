@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from exchange import NewTxDaemon, CheckConfsDaemon, Exchange, User, BtcTx, LiqTx
+from exchange import * 
 from test_framework.authproxy import AuthServiceProxy, JSONRPCException
 
 import os
@@ -94,10 +94,11 @@ if __name__ == '__main__':
 	# Start daemon searching for new txs and updating confirmations
 	newtxdaemon_btc = NewTxDaemon("newTxDaemon_btc", excX, bexc, "BTC")
 	checkconfsdaemon_btc = updateConfsDaemon("updateConfsDaemon_btc", excX, bexc, "BTC")
-	NewTxDaemon.daemon = True
-	updateConfsDaemon.daemon = True
+	newtxdaemon_btc.daemon = True
+	checkconfsdaemon_btc.daemon = True
 	newtxdaemon_btc.start()
-	updateConfsDaemon.start()
+	checkconfsdaemon_btc.start()
+	time.sleep(2)
 
 	# Generating some coins to spend
 	bmin.generate(101) 

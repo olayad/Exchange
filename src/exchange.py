@@ -43,7 +43,7 @@ class updateConfsDaemon(threading.Thread):
 class NewTxDaemon(threading.Thread):
 	def __init__(self, tid, exc, bexc, chain):
 		assert((chain is not None) and (chain == "BTC" or chain == "LIQ"))
-		assert((exc is not None) and bexc is not None))
+		assert((exc is not None) and bexc is not None)
 		threading.Thread.__init__(self)
 		self.exc = exc 
 		self.tid = tid
@@ -99,8 +99,9 @@ class NewTxDaemon(threading.Thread):
 		# TODO: What happens if I get a transaction without user?
 
 		print("[Info] Initializing "+str(self.tid)+" thread, monitoring address list...")
-		# Checks if the recieved tx is alred included in the exchange btc_tx_set, if not,
-		# it creates a new tx instance and adds it to exchange list of conf and unconf txs
+		# Checks if the recieved tx is alred included in the exchange 
+		# btc_tx_set, if not, it creates a new tx instance and adds 
+		# it to exchange list of conf and unconf txs
 		while (+
 			True):
 			time.sleep(1)
@@ -112,7 +113,8 @@ class NewTxDaemon(threading.Thread):
 					print("This is for Liquid transactions")
 			except:
 				continue
-			if (len(data) == 0): 	# Case for when there are no new transactions
+		 	# Case for when there are no new transactions	
+			if (len(data) == 0):
 				continue
 			else:
 				for tx in data:
