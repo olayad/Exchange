@@ -29,13 +29,16 @@ class updateConfsDaemon(threading.Thread):
 		while(True):
 			time.sleep(1)
 			# Updating unconfirmed txs
-			# for tx in self.exc.unconf_btc_tx:
-			try:
-				tx = self.bexc.gettransaction(tx.txid)
-				# print(tx)
-			except:
-				continue
-	
+			for u in self.exc.users:
+				if u.total_unconf >= 1:
+					self.updateConfs(u)
+				print("[Debug] updateConfsDaemon - No tx to update"
+					+"for user:"+u.name)
+	def updateConfs(self, user):
+		print("[Debug] updateConfsDaemon - Updating confs for user:"+user.name
+			+"")
+		#TODO: Working Here!!!! ************
+		#TODO: Do not forget to decrease total_unconf at the end
 
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
 # If a new transaction has been received, it appends to the exchange
@@ -69,6 +72,9 @@ class NewTxDaemon(threading.Thread):
 			# Add the transaction to user
 			if user is not None:
 				user.unconf_btc_txs[tx["txid"]] = new_tx
+				user.total_unconf+=1
+				print("[Debug] NewTxDaemon - "+user.name+
+					" total_unconfs: "+str(user.total_unconf))
 			# Adds to the set monitored by NewTxDaemon
 			self.exc.btc_tx_set.add(tx["txid"])	
 			self.exc.print_monitored_tx()
@@ -88,6 +94,9 @@ class NewTxDaemon(threading.Thread):
 			# Add the transaction to user
 			if user is not None:
 				user.conf_btc_txs[tx["txid"]] = new_tx
+				user.total_unconf+=1
+				print("[Debug] NewTxDaemon - "+user.name+
+					" total_unconfs: "+str(user.total_unconf))
 			# Adds to the set monitored by NewTxDaemon
 			self.exc.btc_tx_set.add(tx["txid"])			
 
@@ -197,6 +206,7 @@ class User:
 		self.conf_liq_txs = {}		
 		self.unconf_liq_txs = {}
 		self.btc_addr = set()
+		self.total_unconf = 0
 		exchange.users.append(self);
 		exchange.user_ctr += 1
 
