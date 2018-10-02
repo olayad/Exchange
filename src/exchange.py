@@ -45,7 +45,7 @@ class updateConfsDaemon(threading.Thread):
 				"\ttx:"+t)
 			print(self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1))
 			print()
-
+		# Testing ssh
 		#TODO: Do not forget to decrease total_unconf at the end
 
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
