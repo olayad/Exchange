@@ -32,12 +32,20 @@ class updateConfsDaemon(threading.Thread):
 			for u in self.exc.users:
 				if u.total_unconf >= 1:
 					self.updateConfs(u)
-				print("[Debug] updateConfsDaemon - No tx to update"
-					+"for user:"+u.name)
+				else:
+					print("[Debug] updateConfsDaemon - No"
+					+"tx to update for user:"+u.name)
+			#TODO: I have the transaction, check if it has confirmations
+
 	def updateConfs(self, user):
 		print("[Debug] updateConfsDaemon - Updating confs for user:"+user.name
 			+"")
-		#TODO: Working Here!!!! ************
+		for t in user.unconf_btc_txs:
+			print("***\t[Debug] updateConfsDaemon \tuser:"+user.name+
+				"\ttx:"+t)
+			print(self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1))
+			print()
+
 		#TODO: Do not forget to decrease total_unconf at the end
 
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
