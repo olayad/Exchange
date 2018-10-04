@@ -33,8 +33,7 @@ class updateConfsDaemon(threading.Thread):
 				if u.total_unconf >= 1:
 					self.updateConfs(u)
 				else:
-					print("[Debug] updateConfsDaemon - No"
-					+"tx to update for user:"+u.name)
+					continue
 			#TODO: I have the transaction, check if it has confirmations
 
 	def updateConfs(self, user):
@@ -43,9 +42,9 @@ class updateConfsDaemon(threading.Thread):
 		for t in user.unconf_btc_txs:
 			print("***\t[Debug] updateConfsDaemon \tuser:"+user.name+
 				"\ttx:"+t)
-			print(self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1))
-			print()
-		# Testing ssh
+			tx = self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1)
+			print("tx[txid]:"+tx[txid])
+			print
 		#TODO: Do not forget to decrease total_unconf at the end
 
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
