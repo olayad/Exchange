@@ -45,6 +45,7 @@ class updateConfsDaemon(threading.Thread):
 			tx = self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1)
 			print("tx[txid]:"+tx[txid])
 			print
+			
 		#TODO: Do not forget to decrease total_unconf at the end
 
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
