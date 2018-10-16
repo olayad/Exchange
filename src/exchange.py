@@ -40,12 +40,21 @@ class updateConfsDaemon(threading.Thread):
 		print("[Debug] updateConfsDaemon - Updating confs for user:"+user.name
 			+"")
 		for t in user.unconf_btc_txs:
-			print("***\t[Debug] updateConfsDaemon \tuser:"+user.name+
+			print("***\t[Debug] updateConfs \tuser:"+user.name+
 				"\ttx:"+t)
 			tx = self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1)
-			print("tx[txid]:"+tx[txid])
-			print
-			
+			try:
+				if tx["confirmations"] >= CONFS:
+					print("[Debug] updateConfs - Monitored", \
+					"tx is now CONF",tx["confirmations"])
+				print(type(user.unconf_btc_txs[t]))
+				#LEFT HERE: Take the tx above, update confirmations
+				# and remove from uncofirmed list
+			except KeyError:
+				print("[Debug] updateConfs - Monitored tx still", \
+					"UNCONFIRMED:", tx["txid"])
+
+
 		#TODO: Do not forget to decrease total_unconf at the end
 
 # Thread that monitors listtransactions() to check if a new transaction has been recieved. 
@@ -176,9 +185,10 @@ class Exchange:
 	# 	return -1 
 
 	def print_monitored_tx(self):
-		print("[Debug] -=-=-= Printing list of monitored NewTxDaemon =-=-=-Exc:"+self.name)
+		print("[Debug] \t-=-=-= Printing list of monitored NewTxDaemon =-=-=-Exc:"+self.name)
 		for tx in self.btc_tx_set:
 				print("\t"+tx)
+		print("\t\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 
 	def generateBtcAddr(self, user, bexc):
 		assert(isinstance(user, User) or (user == None))

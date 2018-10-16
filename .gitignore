@@ -3,4 +3,5 @@ tmp/
 *.swo
 *~
 *.pyc
-
+*.swn
+*.swm
