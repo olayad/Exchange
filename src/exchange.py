@@ -39,6 +39,7 @@ class updateConfsDaemon(threading.Thread):
 	def updateConfs(self, user):
 		print("[Debug] updateConfsDaemon - Updating confs for user:"+user.name
 			+"")
+		# Updates BTC txs first
 		for t in user.unconf_btc_txs:
 			print("***\t[Debug] updateConfs \tuser:"+user.name+
 				"\ttx:"+t)
@@ -47,12 +48,22 @@ class updateConfsDaemon(threading.Thread):
 				if tx["confirmations"] >= CONFS:
 					print("[Debug] updateConfs - Monitored", \
 					"tx is now CONF",tx["confirmations"])
-				print(type(user.unconf_btc_txs[t]))
-				#LEFT HERE: Take the tx above, update confirmations
-				# and remove from uncofirmed list
+				print(user.unconf_btc_txs[t])
+				user.unconf_btc_txs[t].status = 1
+				# Remove from unconf list and add to confirmed
+				print("BTC unconf list (before pop) len:%d"% len(user.unconf_btc_txs))
+				print("BTC confirmed list (before insertion) len:%d"% len(user.conf_btc_txs))	
+				popped = user.unconf_btc_txs.pop(t)
+				user.conf_btc_txs[t] = popped
+				print("BTC unconf list (after pop) len:%d"% len(user.unconf_btc_txs))
+				print("BTC confirmed list (after insertion) len:%d"% len(user.conf_btc_txs))	
+				#LEFT HERE: Fix error dictionary changed size during iteration
+				#TODO: change name of function to updateStatus	
 			except KeyError:
 				print("[Debug] updateConfs - Monitored tx still", \
 					"UNCONFIRMED:", tx["txid"])
+
+
 
 
 		#TODO: Do not forget to decrease total_unconf at the end
@@ -83,7 +94,7 @@ class NewTxDaemon(threading.Thread):
 				" tx is UNCONFIRMED and not in btc_tx_set - txid: "+tx["txid"])
 			new_tx = BtcTx(tx["account"], tx["address"], tx["category"],
 					tx["amount"], tx["label"], tx["vout"], 
-					tx["confirmations"], tx["txid"], tx["time"], 0)
+					tx["txid"], tx["time"], 0)
 			print("[Debug] NewTxDaemon - User of the deposit address is:"
 				+ user.name+" ,  address:"+tx["address"])
 			# Add the transaction to user
@@ -188,7 +199,7 @@ class Exchange:
 		print("[Debug] \t-=-=-= Printing list of monitored NewTxDaemon =-=-=-Exc:"+self.name)
 		for tx in self.btc_tx_set:
 				print("\t"+tx)
-		print("\t\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
+		print("\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 
 	def generateBtcAddr(self, user, bexc):
 		assert(isinstance(user, User) or (user == None))
@@ -239,20 +250,21 @@ class User:
 
 class BtcTx:
 	def __init__ (self, account, address, category, amount,
-			 label, vout, confirmations, txid, time, status):
+			 label, vout, txid, time, status):
 		self.account = account
 		self.address = address
 		self.category = category
 		self.amount = amount
 		self.label = label
 		self.vout = vout
-		self.confirmations = confirmations
 		self.txid = txid
 		self.time = time
 		self.status = status # 0: unconfirmed, 1: confirmed
 
 	def __repr__(self):
-		return str("BtcTx: "+self.txid)
+		return str("\nBTCTX:\t: "+self.txid+"\t addr: "+self.address+
+				"\tstatus:"+str(self.status)+
+				"\tamount:"+str(self.amount))
 
 class LiqTx(BtcTx):
 	def __init__ (self, txid, vout, address, amount, status, blinder, assetblinder):
