@@ -34,36 +34,38 @@ class updateConfsDaemon(threading.Thread):
 					self.updateConfs(u)
 				else:
 					continue
-			#TODO: I have the transaction, check if it has confirmations
 
 	def updateConfs(self, user):
-		print("[Debug] updateConfsDaemon - Updating confs for user:"+user.name
-			+"")
 		# Updates BTC txs first
-		for t in user.unconf_btc_txs:
-			print("***\t[Debug] updateConfs \tuser:"+user.name+
-				"\ttx:"+t)
+		for t in list(user.unconf_btc_txs):
 			tx = self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1)
 			try:
 				if tx["confirmations"] >= CONFS:
-					print("[Debug] updateConfs - Monitored", \
-					"tx is now CONF",tx["confirmations"])
+					print("\n[Debug] updateConfs - Monitored", \
+					"tx is now CONFIRMED "+t+"%d"%tx["confirmations"])
+				print("List before pop")
+				user.printBtcUnconf()	
 				print(user.unconf_btc_txs[t])
+				user.printBtcConf()
 				user.unconf_btc_txs[t].status = 1
+				user.total_unconf -= 1
 				# Remove from unconf list and add to confirmed
-				print("BTC unconf list (before pop) len:%d"% len(user.unconf_btc_txs))
-				print("BTC confirmed list (before insertion) len:%d"% len(user.conf_btc_txs))	
+				print("Total unconf transactions:%d"% user.total_unconf)	
 				popped = user.unconf_btc_txs.pop(t)
 				user.conf_btc_txs[t] = popped
-				print("BTC unconf list (after pop) len:%d"% len(user.unconf_btc_txs))
-				print("BTC confirmed list (after insertion) len:%d"% len(user.conf_btc_txs))	
-				#LEFT HERE: Fix error dictionary changed size during iteration
+				
+				print("Adding to confirmed list:"+t+" with confs:"+str(tx["confirmations"]))
+				print("List after pop")
+				user.printBtcUnconf()	
+				#TODO: I need to validate that line 49 is printing the the correct result
+				# so when a tx is removef from uncofirmed, it gets added to confirmed list
 				#TODO: change name of function to updateStatus	
 			except KeyError:
 				print("[Debug] updateConfs - Monitored tx still", \
 					"UNCONFIRMED:", tx["txid"])
-
-
+			# Catches errors when bitcoin-cli is busy
+			except:
+				continue
 
 		#TODO: Do not forget to decrease total_unconf at the end
 
@@ -115,7 +117,7 @@ class NewTxDaemon(threading.Thread):
 				" tx is CONF and not in btc_tx_set - txid: "+tx["txid"])
 			new_tx = BtcTx(tx["account"], tx["address"], tx["category"],
 					tx["amount"], tx["label"], tx["vout"], 
-					tx["confirmations"], tx["txid"], tx["time"], 0)
+					tx["txid"], tx["time"], 0)
 			print("[Debug] NewTxDaemon - User of the deposit address is:"
 				+ user.name+" ,  address:"+tx["address"])
 			# Add the transaction to user
@@ -224,7 +226,6 @@ class Exchange:
 			# print("ID: "+str(u.uid)+" \tUser_name: "+u.name+"\t\t"+"BTC_balance: ")
 		print("Total users:", self.user_ctr)
 		print("-=-=-= End of List =-=-=-")
-
 class User:
 	def __init__(self, name, exchange):
 		self.uid = exchange.user_ctr
@@ -246,7 +247,18 @@ class User:
 		for p in self.btc_addr:
 			print('{0:<6}'.format(p))
 		print("-=-=-= End of List =-=-=-")
+	
+	def printBtcConf(self):
+		print("-=-=[BTC] User:"+self.name+" Total CONFIRMED: "+str(len(self.conf_btc_txs))+" =-=-")
+		for p in self.conf_btc_txs:
+			print(p)
+		print("-=-=-= End of List =-=-=-")
 
+	def printBtcUnconf(self):
+		print("-=-=[BTC] User:"+self.name+" Total unconf: "+str(self.total_unconf)+" =-=-")
+		for p in self.unconf_btc_txs:
+			print(p)
+		print("-=-=-= End of List =-=-=-")
 class BtcTx:
 	def __init__ (self, account, address, category, amount,
 			 label, vout, txid, time, status):
@@ -261,7 +273,7 @@ class BtcTx:
 		self.status = status # 0: unconfirmed, 1: confirmed
 
 	def __repr__(self):
-		return str("\nBTCTX:\t: "+self.txid+"\t addr: "+self.address+
+		return str("BTCTX:\t: "+self.txid+"\t addr: "+self.address+
 				"\tstatus:"+str(self.status)+
 				"\tamount:"+str(self.amount))
 
