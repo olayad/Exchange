@@ -41,27 +41,18 @@ class updateConfsDaemon(threading.Thread):
 			tx = self.bexc.getrawtransaction(user.unconf_btc_txs[t].txid, 1)
 			try:
 				if tx["confirmations"] >= CONFS:
-					print("\n[Debug] updateConfs - Monitored", \
-					"tx is now CONFIRMED "+t+"%d"%tx["confirmations"])
-				print("List before pop")
-				user.printBtcUnconf()	
-				print(user.unconf_btc_txs[t])
-				user.printBtcConf()
+					print("\n[Debug] updateConfs - Monitored", 
+					"tx "+user.name+" is now CONFIRMED "+
+					t+"%d"%tx["confirmations"])
 				user.unconf_btc_txs[t].status = 1
 				user.total_unconf -= 1
 				# Remove from unconf list and add to confirmed
-				print("Total unconf transactions:%d"% user.total_unconf)	
 				popped = user.unconf_btc_txs.pop(t)
 				user.conf_btc_txs[t] = popped
 				
-				print("Adding to confirmed list:"+t+" with confs:"+str(tx["confirmations"]))
-				print("List after pop")
-				user.printBtcUnconf()	
-				#TODO: I need to validate that line 49 is printing the the correct result
-				# so when a tx is removef from uncofirmed, it gets added to confirmed list
 				#TODO: change name of function to updateStatus	
 			except KeyError:
-				print("[Debug] updateConfs - Monitored tx still", \
+				print("[Debug] updateConfs - Monitored tx still",
 					"UNCONFIRMED:", tx["txid"])
 			# Catches errors when bitcoin-cli is busy
 			except:

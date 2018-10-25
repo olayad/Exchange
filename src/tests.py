@@ -144,10 +144,10 @@ if __name__ == '__main__':
 
 
 
+	time.sleep(3)
+
 	sys.exit(1)
 
-
-	time.sleep(3)
 
 	print()
 	# print("bmin.listtransactions():"+ str(bmin.listtransactions()))
